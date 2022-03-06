@@ -15,6 +15,7 @@ type server struct {
 }
 
 func (*server) Greet(ctx context.Context, req *greetpb.GreetRequest) (*greetpb.GreetResponse, error) {
+	fmt.Printf("Greet function was invoked with %v\n", req)
 	firstname := req.GetGreeting().GetFirstName()
 	result := "hello " + firstname
 	res := &greetpb.GreetResponse{
@@ -28,13 +29,13 @@ func main() {
 
 	lis, err := net.Listen("tcp", "0.0.0.0:50051")
 	if err != nil {
-		log.Fatal("Failed to listen: ", err)
+		log.Fatalf("Failed to listen: %v\n", err)
 	}
 
 	s := grpc.NewServer()
 	greetpb.RegisterGreetServiceServer(s, &server{})
 
 	if err := s.Serve(lis); err != nil {
-		log.Fatal("Failed to serve: ", err)
+		log.Fatalf("Failed to serve: %v\n", err)
 	}
 }
