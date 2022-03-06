@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net"
@@ -10,7 +11,16 @@ import (
 )
 
 type server struct {
-	greetpb.UnimplementedGreetServiceServer
+	greetpb.GreetServiceServer
+}
+
+func (*server) Greet(ctx context.Context, req *greetpb.GreetRequest) (*greetpb.GreetResponse, error) {
+	firstname := req.GetGreeting().GetFirstName()
+	result := "hello " + firstname
+	res := &greetpb.GreetResponse{
+		Result: result,
+	}
+	return res, nil
 }
 
 func main() {
