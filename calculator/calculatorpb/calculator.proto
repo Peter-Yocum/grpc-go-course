@@ -9,6 +9,7 @@ message Calculation{
 }
 
 message CalculatorRequest{
+    // calculation might seem generic for a summing service, but this is extensible to future math operations by adding a new field in calculation
     Calculation Calculation = 1;
 }
 
