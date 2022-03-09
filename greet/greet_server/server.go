@@ -47,12 +47,12 @@ func (*server) LongGreet(stream greetpb.GreetService_LongGreetServer) error {
 		req, err := stream.Recv()
 		if err == io.EOF {
 			//finished reading client stream
-			stream.SendAndClose(&greetpb.LongGreetResponse{
+			return stream.SendAndClose(&greetpb.LongGreetResponse{
 				Result: result,
 			})
 		}
 		if err != nil {
-			log.Fatal("Error while reading client stream")
+			log.Fatalf("Error while reading client stream: %v", err)
 		}
 		firstname := req.Greeting.GetFirstName()
 		result += "Hello " + firstname + "! "
