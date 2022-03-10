@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"time"
 
 	"github.com/Peter-Yocum/grpc-go-course/calculator/calculatorpb"
 	"google.golang.org/grpc"
@@ -27,6 +28,8 @@ func main() {
 	sendUnaryRequest(client)
 
 	sendPrimeDecompositionRequest(client)
+
+	SendAverageRequest(client)
 }
 
 func sendUnaryRequest(client calculatorpb.CalculatorServiceClient) {
@@ -66,4 +69,37 @@ func sendPrimeDecompositionRequest(client calculatorpb.CalculatorServiceClient) 
 		}
 		log.Printf("One factor of %v is: %v\n", prime_number, msg.GetFactor())
 	}
+}
+
+func SendAverageRequest(client calculatorpb.CalculatorServiceClient) {
+
+	requests := []*calculatorpb.AverageRequest{
+		{
+			Number: 5,
+		},
+		{
+			Number: 6,
+		},
+		{
+			Number: 7,
+		},
+		{
+			Number: 8,
+		},
+	}
+
+	stream, err := client.Average(context.Background())
+	if err != nil {
+		log.Fatalf("Error when opening up average request stream: %v", err)
+	}
+	for _, req := range requests {
+		fmt.Printf("Sending request: %v\n", req)
+		stream.Send(req)
+		time.Sleep(100 * time.Millisecond)
+	}
+	response, err := stream.CloseAndRecv()
+	if err != nil {
+		log.Fatalf("Error when closing stream and receiving response: %v", err)
+	}
+	fmt.Printf("Received average response: %v\n", response)
 }
