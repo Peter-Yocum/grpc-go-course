@@ -25,10 +25,21 @@ message PrimeDecompositionResponse{
     int64 factor = 1;
 }
 
+message AverageRequest{
+    int64 number = 1;
+}
+
+message AverageResponse{
+    float result = 1;
+}
+
 service CalculatorService{
     //Unary
     rpc Calculate(CalculatorRequest) returns (CalculatorResponse){};
 
     //Streaming
     rpc PrimeNumberDecomposition(PrimeDecompositionRequest) returns (stream PrimeDecompositionResponse){};
+
+    //Client streaming
+    rpc Average(stream AverageRequest) returns (AverageResponse){};
 }
