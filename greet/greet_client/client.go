@@ -29,7 +29,9 @@ func main() {
 
 	//sendStreamingRequest(client)
 
-	sendClientStreamingRequest(client)
+	//sendClientStreamingRequest(client)
+
+	sendGreetEveryone(client)
 }
 
 func sendUnaryRequest(client greetpb.GreetServiceClient) {
@@ -73,7 +75,7 @@ func sendStreamingRequest(client greetpb.GreetServiceClient) {
 }
 
 func sendClientStreamingRequest(client greetpb.GreetServiceClient) {
-
+	fmt.Println("Starting to do client Streaming RPC...")
 	requests := []*greetpb.LongGreetRequest{
 		{
 			Greeting: &greetpb.Greeting{
@@ -110,4 +112,65 @@ func sendClientStreamingRequest(client greetpb.GreetServiceClient) {
 		log.Fatalf("error while receiving response from long greet: %v", err)
 	}
 	fmt.Printf("Response received for requests: %v\n", response)
+}
+
+func sendGreetEveryone(client greetpb.GreetServiceClient) {
+	fmt.Println("Starting to do Bidi Streaming RPC...")
+
+	// create stream by invoking client
+	stream, err := client.GreetEveryone(context.Background())
+	if err != nil {
+		log.Fatalf("Error while creating stream: %v\n", err)
+		return
+	}
+
+	requests := []*greetpb.GreetEveryoneRequest{
+		{
+			Greeting: &greetpb.Greeting{
+				FirstName: "Peter",
+				LastName:  "Yocum",
+			},
+		},
+		{
+			Greeting: &greetpb.Greeting{
+				FirstName: "reteP",
+				LastName:  "mucoY",
+			},
+		},
+		{
+			Greeting: &greetpb.Greeting{
+				FirstName: "Nobody",
+				LastName:  "Nemo",
+			},
+		},
+	}
+
+	waitchannel := make(chan struct{})
+	// send messages to the client (go routine)
+	go func() {
+		for _, req := range requests {
+			err := stream.Send(req)
+			fmt.Printf("Sending request: %v\n", req)
+			if err != nil {
+				log.Fatalf("Error while trying to stream bidi request: %v\n", err)
+			}
+		}
+		stream.CloseSend()
+	}()
+	// receive messages from client (go routine)
+	go func() {
+		for {
+			response, err := stream.Recv()
+			if err == io.EOF {
+				close(waitchannel)
+				break
+			}
+			if err != nil {
+				log.Fatalf("Error while receiving bidi response: %v\n", err)
+			}
+			fmt.Printf("received bidi result from server: %v\n", response.GetResult())
+		}
+	}()
+	// block until everything is done
+	<-waitchannel
 }
