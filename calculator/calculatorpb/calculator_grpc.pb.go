@@ -24,6 +24,10 @@ const _ = grpc.SupportPackageIsVersion7
 type CalculatorServiceClient interface {
 	//Unary
 	Calculate(ctx context.Context, in *CalculatorRequest, opts ...grpc.CallOption) (*CalculatorResponse, error)
+	//error handling
+	//this rpc will throw an exception if the sent number is negative (we don't do imaginaries here)
+	//the error is of type INVALID_ARGUMENT
+	SquareRoot(ctx context.Context, in *SquareRootRequest, opts ...grpc.CallOption) (*SquareRootResponse, error)
 	//Streaming
 	PrimeNumberDecomposition(ctx context.Context, in *PrimeDecompositionRequest, opts ...grpc.CallOption) (CalculatorService_PrimeNumberDecompositionClient, error)
 	//Client streaming
@@ -43,6 +47,15 @@ func NewCalculatorServiceClient(cc grpc.ClientConnInterface) CalculatorServiceCl
 func (c *calculatorServiceClient) Calculate(ctx context.Context, in *CalculatorRequest, opts ...grpc.CallOption) (*CalculatorResponse, error) {
 	out := new(CalculatorResponse)
 	err := c.cc.Invoke(ctx, "/calculator.CalculatorService/Calculate", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *calculatorServiceClient) SquareRoot(ctx context.Context, in *SquareRootRequest, opts ...grpc.CallOption) (*SquareRootResponse, error) {
+	out := new(SquareRootResponse)
+	err := c.cc.Invoke(ctx, "/calculator.CalculatorService/SquareRoot", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -152,6 +165,10 @@ func (x *calculatorServiceFindMaximumClient) Recv() (*FindMaximumResponse, error
 type CalculatorServiceServer interface {
 	//Unary
 	Calculate(context.Context, *CalculatorRequest) (*CalculatorResponse, error)
+	//error handling
+	//this rpc will throw an exception if the sent number is negative (we don't do imaginaries here)
+	//the error is of type INVALID_ARGUMENT
+	SquareRoot(context.Context, *SquareRootRequest) (*SquareRootResponse, error)
 	//Streaming
 	PrimeNumberDecomposition(*PrimeDecompositionRequest, CalculatorService_PrimeNumberDecompositionServer) error
 	//Client streaming
@@ -167,6 +184,9 @@ type UnimplementedCalculatorServiceServer struct {
 
 func (UnimplementedCalculatorServiceServer) Calculate(context.Context, *CalculatorRequest) (*CalculatorResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Calculate not implemented")
+}
+func (UnimplementedCalculatorServiceServer) SquareRoot(context.Context, *SquareRootRequest) (*SquareRootResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SquareRoot not implemented")
 }
 func (UnimplementedCalculatorServiceServer) PrimeNumberDecomposition(*PrimeDecompositionRequest, CalculatorService_PrimeNumberDecompositionServer) error {
 	return status.Errorf(codes.Unimplemented, "method PrimeNumberDecomposition not implemented")
@@ -204,6 +224,24 @@ func _CalculatorService_Calculate_Handler(srv interface{}, ctx context.Context, 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(CalculatorServiceServer).Calculate(ctx, req.(*CalculatorRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CalculatorService_SquareRoot_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SquareRootRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CalculatorServiceServer).SquareRoot(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/calculator.CalculatorService/SquareRoot",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CalculatorServiceServer).SquareRoot(ctx, req.(*SquareRootRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -291,6 +329,10 @@ var CalculatorService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Calculate",
 			Handler:    _CalculatorService_Calculate_Handler,
+		},
+		{
+			MethodName: "SquareRoot",
+			Handler:    _CalculatorService_SquareRoot_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

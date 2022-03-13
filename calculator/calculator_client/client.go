@@ -10,7 +10,9 @@ import (
 
 	"github.com/Peter-Yocum/grpc-go-course/calculator/calculatorpb"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 )
 
 func main() {
@@ -32,7 +34,9 @@ func main() {
 
 	//sendAverageRequest(client)
 
-	sendFindMaximumRequest(client)
+	//sendFindMaximumRequest(client)
+
+	sendSquareRootRequest(client)
 }
 
 func sendUnaryRequest(client calculatorpb.CalculatorServiceClient) {
@@ -151,4 +155,42 @@ func sendFindMaximumRequest(client calculatorpb.CalculatorServiceClient) {
 	}()
 
 	<-waitchannel
+}
+
+func sendSquareRootRequest(client calculatorpb.CalculatorServiceClient) {
+	fmt.Println("Starting to do square root RPC...")
+	req := &calculatorpb.SquareRootRequest{
+		Number: 1000,
+	}
+	fmt.Printf("number we will be sending: %v\n", req.GetNumber())
+	res, err := client.SquareRoot(context.Background(), req)
+	if err != nil {
+		processSquareRootError(err)
+	}
+	log.Printf("Response from square root of num: %v is: %v\n", req.GetNumber(), res.GetNumberRoot())
+
+	req = &calculatorpb.SquareRootRequest{
+		Number: -1000,
+	}
+	fmt.Printf("number we will be sending: %v\n", req.GetNumber())
+	res, err = client.SquareRoot(context.Background(), req)
+	if err != nil {
+		processSquareRootError(err)
+	}
+	log.Printf("Response from square root of num: %v is: %v\n", req.GetNumber(), res.GetNumberRoot())
+}
+
+func processSquareRootError(err error) {
+	respErr, ok := status.FromError(err)
+	if ok {
+		// my error from grpc
+		fmt.Println(respErr.Message())
+		fmt.Println(respErr.Code())
+		if respErr.Code() == codes.InvalidArgument {
+			fmt.Println("We sent a negative number!")
+		}
+	} else {
+		// framework error/problem
+		log.Fatalf("Error while calling calculate rpc: %v\n", err)
+	}
 }
