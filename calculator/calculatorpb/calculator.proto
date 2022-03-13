@@ -33,6 +33,14 @@ message AverageResponse{
     float result = 1;
 }
 
+message FindMaximumRequest{
+    float next_number = 1;
+}
+
+message FindMaximumResponse{
+    float current_max = 1;
+}
+
 service CalculatorService{
     //Unary
     rpc Calculate(CalculatorRequest) returns (CalculatorResponse){};
@@ -42,4 +50,7 @@ service CalculatorService{
 
     //Client streaming
     rpc Average(stream AverageRequest) returns (AverageResponse){};
+
+    //BIDI streaming
+    rpc FindMaximum(stream FindMaximumRequest) returns (stream FindMaximumResponse){};
 }

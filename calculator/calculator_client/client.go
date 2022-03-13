@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"time"
 
 	"github.com/Peter-Yocum/grpc-go-course/calculator/calculatorpb"
@@ -25,11 +26,13 @@ func main() {
 
 	fmt.Printf("created client: %f\n", client)
 
-	sendUnaryRequest(client)
+	//sendUnaryRequest(client)
 
-	sendPrimeDecompositionRequest(client)
+	//sendPrimeDecompositionRequest(client)
 
-	SendAverageRequest(client)
+	//sendAverageRequest(client)
+
+	sendFindMaximumRequest(client)
 }
 
 func sendUnaryRequest(client calculatorpb.CalculatorServiceClient) {
@@ -71,7 +74,7 @@ func sendPrimeDecompositionRequest(client calculatorpb.CalculatorServiceClient) 
 	}
 }
 
-func SendAverageRequest(client calculatorpb.CalculatorServiceClient) {
+func sendAverageRequest(client calculatorpb.CalculatorServiceClient) {
 
 	requests := []*calculatorpb.AverageRequest{
 		{
@@ -102,4 +105,50 @@ func SendAverageRequest(client calculatorpb.CalculatorServiceClient) {
 		log.Fatalf("Error when closing stream and receiving response: %v", err)
 	}
 	fmt.Printf("Received average response: %v\n", response)
+}
+
+func sendFindMaximumRequest(client calculatorpb.CalculatorServiceClient) {
+
+	stream, err := client.FindMaximum(context.Background())
+	if err != nil {
+		log.Fatalf("Error when opening up find maximum stream: %v", err)
+	}
+
+	numbers_to_send := []int{1, -1, 3, -4, 10, 5, 101, 52, 1010}
+	waitchannel := make(chan struct{})
+	maximum := math.Inf(-1)
+
+	go func() {
+		for _, number := range numbers_to_send {
+			fmt.Printf("Sending find maximum request for num: %v\n", number)
+			time.Sleep(100 * time.Millisecond)
+			req_to_send := &calculatorpb.FindMaximumRequest{
+				NextNumber: float32(number),
+			}
+			err := stream.Send(req_to_send)
+			if err != nil {
+				log.Fatalf("Error while trying to stream find maximum request: %v\n", err)
+			}
+		}
+		stream.CloseSend()
+	}()
+
+	go func() {
+		for {
+			response, err := stream.Recv()
+			if err == io.EOF {
+				close(waitchannel)
+				break
+			}
+			if err != nil {
+				log.Fatalf("Error while trying to stream find maximum response: %v\n", err)
+			}
+			if response.GetCurrentMax() > float32(maximum) {
+				maximum = float64(response.GetCurrentMax())
+				fmt.Printf("Foud new maximum: %v\n", maximum)
+			}
+		}
+	}()
+
+	<-waitchannel
 }

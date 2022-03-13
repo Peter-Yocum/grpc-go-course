@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"net"
 
 	"github.com/Peter-Yocum/grpc-go-course/calculator/calculatorpb"
@@ -62,6 +63,32 @@ func (*server) Average(stream calculatorpb.CalculatorService_AverageServer) erro
 		total += float32(req.GetNumber())
 		num_req++
 		fmt.Printf("Received another number to average, running total: %v, total numbers received: %v\n", total, num_req)
+	}
+}
+
+func (*server) FindMaximum(stream calculatorpb.CalculatorService_FindMaximumServer) error {
+	fmt.Print("Starting Find Maximum\n")
+	current_max := float32(math.Inf(-1))
+	for {
+		req, recv_err := stream.Recv()
+		if recv_err == io.EOF {
+			return nil
+		}
+		if recv_err != nil {
+			log.Fatalf("error when trying to receive stream message in find maximum: %v", recv_err)
+			return recv_err
+		}
+		new_number := req.GetNextNumber()
+		if new_number > current_max {
+			current_max = new_number
+		}
+		send_err := stream.SendMsg(&calculatorpb.FindMaximumResponse{
+			CurrentMax: current_max,
+		})
+		if send_err != nil {
+			log.Fatalf("error when trying to send stream message in find maximum: %v", send_err)
+			return send_err
+		}
 	}
 }
 
