@@ -17,6 +17,14 @@ message CalculatorResponse{
     int64 result = 1;
 }
 
+message SquareRootRequest{
+    int32 number = 1;
+}
+
+message SquareRootResponse{
+    double number_root = 1;
+}
+
 message PrimeDecompositionRequest{
     int64 prime_number = 1;
 }
@@ -44,6 +52,11 @@ message FindMaximumResponse{
 service CalculatorService{
     //Unary
     rpc Calculate(CalculatorRequest) returns (CalculatorResponse){};
+
+    //error handling
+    //this rpc will throw an exception if the sent number is negative (we don't do imaginaries here)
+    //the error is of type INVALID_ARGUMENT
+    rpc SquareRoot(SquareRootRequest) returns (SquareRootResponse){};
 
     //Streaming
     rpc PrimeNumberDecomposition(PrimeDecompositionRequest) returns (stream PrimeDecompositionResponse){};
