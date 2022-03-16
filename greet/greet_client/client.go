@@ -10,14 +10,25 @@ import (
 	"github.com/Peter-Yocum/grpc-go-course/greet/greetpb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 )
 
 func main() {
 	fmt.Println("Hello I'm a client")
 
-	conn, err := grpc.Dial("0.0.0.0:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	tls := false
+	opts := grpc.WithInsecure()
+	if tls {
+		cert_file := "ssl/ca.crt"
+		creds, sslErr := credentials.NewClientTLSFromFile(cert_file, "")
+		if sslErr != nil {
+			log.Fatalf("Error while loading credentials for client: %v", sslErr)
+		}
+		opts = grpc.WithTransportCredentials(creds)
+	}
+
+	conn, err := grpc.Dial("localhost:50051", opts)
 	if err != nil {
 		log.Fatalf("could not connect: %v\n", err)
 	}
@@ -27,7 +38,7 @@ func main() {
 
 	fmt.Printf("created client: %f\n", client)
 
-	//sendUnaryRequest(client)
+	sendUnaryRequest(client)
 
 	//sendStreamingRequest(client)
 
@@ -35,8 +46,8 @@ func main() {
 
 	//sendGreetEveryone(client)
 
-	sendGreetWithDeadline(client, 5*time.Second) //should complete
-	sendGreetWithDeadline(client, 1*time.Second) //should timeout
+	//sendGreetWithDeadline(client, 5*time.Second) //should complete
+	//sendGreetWithDeadline(client, 1*time.Second) //should timeout
 }
 
 func sendUnaryRequest(client greetpb.GreetServiceClient) {
