@@ -31,9 +31,9 @@ type blogItem struct {
 	Content  string             `bson:"content"`
 }
 
-func CreateBlog(ctx context.Context, req *blogpb.CreateBlogRequest) (*blogpb.CreateBlogResponse, error) {
+func (*server) CreateBlog(ctx context.Context, req *blogpb.CreateBlogRequest) (*blogpb.CreateBlogResponse, error) {
 	blog := req.GetBlog()
-
+	fmt.Printf("Retrieved blog from request: %v", blog)
 	data := blogItem{
 		AuthorID: blog.GetAuthorId(),
 		Title:    blog.GetTitle(),
