@@ -24,12 +24,23 @@ func main() {
 
 	fmt.Printf("created client: %f\n", client)
 
-	fmt.Println("Creating blog object and request...")
 	blog := &blogpb.Blog{
 		AuthorId: "Peter",
 		Title:    "My First Blog",
 		Content:  "Content of first blog",
 	}
+	response := sendCreateBlogRequest(client, blog)
+
+	junk_blog := sendReadBlogRequest(client, "fake id")
+	fmt.Printf("The retrieved blog is: %v\n", junk_blog)
+
+	retrieved_blog := sendReadBlogRequest(client, response.Blog.Id)
+	fmt.Printf("The retrieved blog is: %v\n", retrieved_blog)
+}
+
+func sendCreateBlogRequest(client blogpb.BlogServiceClient, blog *blogpb.Blog) *blogpb.CreateBlogResponse {
+
+	fmt.Println("Creating create blog request...")
 	in := &blogpb.CreateBlogRequest{
 		Blog: blog,
 	}
@@ -38,20 +49,17 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error when creating blog: %v", err)
 	}
-	fmt.Printf("Create blog response received: %v", createBlogResponse)
+	fmt.Printf("Create blog response received: %v\n", createBlogResponse)
+	return createBlogResponse
 }
 
-// func sendCreateBlogRequest(client greetpb.GreetServiceClient) {
-// 	fmt.Println("Starting to do Unary RPC...")
-// 	req := &greetpb.GreetRequest{
-// 		Greeting: &greetpb.Greeting{
-// 			FirstName: "Peter",
-// 			LastName:  "Yocum",
-// 		},
-// 	}
-// 	res, err := client.Greet(context.Background(), req)
-// 	if err != nil {
-// 		log.Fatalf("Error while calling greet rpc: %v\n", err)
-// 	}
-// 	log.Printf("Response from greet: %v\n", res.Result)
-// }
+func sendReadBlogRequest(client blogpb.BlogServiceClient, id string) *blogpb.Blog {
+
+	res, err := client.ReadBlog(context.Background(), &blogpb.ReadBlogRequest{
+		BlogId: id,
+	})
+	if err != nil {
+		log.Printf("Error when reading blog: %v", err)
+	}
+	return res.GetBlog()
+}
