@@ -35,7 +35,7 @@ type blogItem struct {
 
 func (*server) CreateBlog(ctx context.Context, req *blogpb.CreateBlogRequest) (*blogpb.CreateBlogResponse, error) {
 	blog := req.GetBlog()
-	fmt.Printf("Retrieved blog from request: %v", blog)
+	fmt.Printf("Retrieved blog from request: %v\n", blog)
 	data := blogItem{
 		AuthorID: blog.GetAuthorId(),
 		Title:    blog.GetTitle(),
@@ -93,13 +93,55 @@ func (*server) ReadBlog(ctx context.Context, req *blogpb.ReadBlogRequest) (*blog
 	}
 
 	return &blogpb.ReadBlogResponse{
-		Blog: &blogpb.Blog{
-			Id:       retrieved_data.ID.Hex(),
-			AuthorId: retrieved_data.AuthorID,
-			Title:    retrieved_data.Title,
-			Content:  retrieved_data.Content,
-		},
+		Blog: dataToBlogPb(retrieved_data),
 	}, nil
+}
+
+func (*server) UpdateBlog(ctx context.Context, req *blogpb.UpdateBlogRequest) (*blogpb.UpdateBlogResponse, error) {
+	new_blog := req.GetBlog()
+	fmt.Printf("Retrieved blog_id from update blog request: %v\n", new_blog.Id)
+
+	oid, err := primitive.ObjectIDFromHex(new_blog.Id)
+	if err != nil {
+		return nil, status.Errorf(
+			codes.InvalidArgument,
+			fmt.Sprintf("Invalid blog_id sent: %v", err),
+		)
+	}
+
+	filter := bson.M{"_id": oid}
+	update := blogItem{
+		ID:       oid,
+		AuthorID: new_blog.GetAuthorId(),
+		Title:    new_blog.GetTitle(),
+		Content:  new_blog.GetContent(),
+	}
+	res, err := collection.ReplaceOne(context.Background(), filter, update)
+	if err != nil || res.MatchedCount != 1 {
+		return nil, status.Errorf(
+			codes.NotFound,
+			fmt.Sprintf("Cannot find blog with specified ID: %v", err),
+		)
+	}
+	if res.ModifiedCount != 1 {
+		return nil, status.Errorf(
+			codes.Internal,
+			fmt.Sprintf("Could not update blog with specified ID: %v", err),
+		)
+	}
+
+	return &blogpb.UpdateBlogResponse{
+		Blog: dataToBlogPb(&update),
+	}, nil
+}
+
+func dataToBlogPb(data *blogItem) *blogpb.Blog {
+	return &blogpb.Blog{
+		Id:       data.ID.Hex(),
+		AuthorId: data.AuthorID,
+		Title:    data.Title,
+		Content:  data.Content,
+	}
 }
 
 func main() {

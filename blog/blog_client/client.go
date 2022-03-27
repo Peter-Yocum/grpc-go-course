@@ -31,11 +31,27 @@ func main() {
 	}
 	response := sendCreateBlogRequest(client, blog)
 
+	//proof trying to read a blog that doesn't exist creates an error but doesn't break program
 	junk_blog := sendReadBlogRequest(client, "fake id")
-	fmt.Printf("The retrieved blog is: %v\n", junk_blog)
+	fmt.Printf("The error for retrieving blog is: %v\n", junk_blog)
 
 	retrieved_blog := sendReadBlogRequest(client, response.Blog.Id)
 	fmt.Printf("The retrieved blog is: %v\n", retrieved_blog)
+
+	retrieved_blog.Content = "New content to show update works!"
+
+	//proof updating a blog that doesn't exist creates an error but doesn't break program
+	junk_blog = &blogpb.Blog{
+		Id:       "62406ccd33ece94df7aac7a8",
+		AuthorId: "not a real author",
+		Title:    "not a real title",
+		Content:  "no real content",
+	}
+	junk_blog = sendUpdateBlogRequest(client, junk_blog)
+	fmt.Printf("The error for updating a blog is: %v\n", junk_blog)
+
+	updated_blog := sendUpdateBlogRequest(client, retrieved_blog)
+	fmt.Printf("The updated blog is: %v\n", updated_blog)
 }
 
 func sendCreateBlogRequest(client blogpb.BlogServiceClient, blog *blogpb.Blog) *blogpb.CreateBlogResponse {
@@ -60,6 +76,17 @@ func sendReadBlogRequest(client blogpb.BlogServiceClient, id string) *blogpb.Blo
 	})
 	if err != nil {
 		log.Printf("Error when reading blog: %v", err)
+	}
+	return res.GetBlog()
+}
+
+func sendUpdateBlogRequest(client blogpb.BlogServiceClient, blog *blogpb.Blog) *blogpb.Blog {
+
+	res, err := client.UpdateBlog(context.Background(), &blogpb.UpdateBlogRequest{
+		Blog: blog,
+	})
+	if err != nil {
+		log.Printf("Error when updating blog: %v", err)
 	}
 	return res.GetBlog()
 }
