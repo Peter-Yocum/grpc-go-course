@@ -9,6 +9,8 @@ import (
 	"os/signal"
 	"time"
 
+	"gopkg.in/mgo.v2/bson"
+
 	"github.com/Peter-Yocum/grpc-go-course/blog/blogpb"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -61,6 +63,41 @@ func (*server) CreateBlog(ctx context.Context, req *blogpb.CreateBlogRequest) (*
 			AuthorId: blog.GetAuthorId(),
 			Title:    blog.GetTitle(),
 			Content:  blog.GetContent(),
+		},
+	}, nil
+}
+
+func (*server) ReadBlog(ctx context.Context, req *blogpb.ReadBlogRequest) (*blogpb.ReadBlogResponse, error) {
+	blog_id := req.GetBlogId()
+	fmt.Printf("Retrieved blog_id from read blog request: %v\n", blog_id)
+
+	oid, err := primitive.ObjectIDFromHex(blog_id)
+	if err != nil {
+		return nil, status.Errorf(
+			codes.InvalidArgument,
+			fmt.Sprintf("Invalid blog_id sent: %v", err),
+		)
+	}
+
+	retrieved_data := &blogItem{}
+
+	filter := bson.M{"_id": oid}
+
+	res := collection.FindOne(context.Background(), filter)
+
+	if err := res.Decode(retrieved_data); err != nil {
+		return nil, status.Errorf(
+			codes.NotFound,
+			fmt.Sprintf("Cannot find blog with specified ID: %v", err),
+		)
+	}
+
+	return &blogpb.ReadBlogResponse{
+		Blog: &blogpb.Blog{
+			Id:       retrieved_data.ID.Hex(),
+			AuthorId: retrieved_data.AuthorID,
+			Title:    retrieved_data.Title,
+			Content:  retrieved_data.Content,
 		},
 	}, nil
 }
