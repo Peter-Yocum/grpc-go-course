@@ -52,6 +52,12 @@ func main() {
 
 	updated_blog := sendUpdateBlogRequest(client, retrieved_blog)
 	fmt.Printf("The updated blog is: %v\n", updated_blog)
+
+	deleted_id := sendDeleteBlogRequest(client, junk_blog.GetId())
+	fmt.Printf("Just deleted blog with id: %v\n", deleted_id)
+
+	deleted_id = sendDeleteBlogRequest(client, updated_blog.GetId())
+	fmt.Printf("Just deleted blog with id: %v\n", deleted_id)
 }
 
 func sendCreateBlogRequest(client blogpb.BlogServiceClient, blog *blogpb.Blog) *blogpb.CreateBlogResponse {
@@ -89,4 +95,15 @@ func sendUpdateBlogRequest(client blogpb.BlogServiceClient, blog *blogpb.Blog) *
 		log.Printf("Error when updating blog: %v", err)
 	}
 	return res.GetBlog()
+}
+
+func sendDeleteBlogRequest(client blogpb.BlogServiceClient, blog_id string) string {
+
+	res, err := client.DeleteBlog(context.Background(), &blogpb.DeleteBlogRequest{
+		BlogId: blog_id,
+	})
+	if err != nil {
+		log.Printf("Error when updating blog: %v", err)
+	}
+	return res.GetBlogId()
 }
