@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 
 	"github.com/Peter-Yocum/grpc-go-course/blog/blogpb"
@@ -58,6 +59,12 @@ func main() {
 
 	deleted_id = sendDeleteBlogRequest(client, updated_blog.GetId())
 	fmt.Printf("Just deleted blog with id: %v\n", deleted_id)
+
+	fmt.Printf("Getting blog list: \n")
+	blogs := sendListBlogRequest(client)
+	for index, blog := range blogs {
+		fmt.Printf("The %v-th blog is: %v\n", index, blog)
+	}
 }
 
 func sendCreateBlogRequest(client blogpb.BlogServiceClient, blog *blogpb.Blog) *blogpb.CreateBlogResponse {
@@ -81,7 +88,7 @@ func sendReadBlogRequest(client blogpb.BlogServiceClient, id string) *blogpb.Blo
 		BlogId: id,
 	})
 	if err != nil {
-		log.Printf("Error when reading blog: %v", err)
+		log.Printf("Error when reading blog: %v\n", err)
 	}
 	return res.GetBlog()
 }
@@ -92,7 +99,7 @@ func sendUpdateBlogRequest(client blogpb.BlogServiceClient, blog *blogpb.Blog) *
 		Blog: blog,
 	})
 	if err != nil {
-		log.Printf("Error when updating blog: %v", err)
+		log.Printf("Error when updating blog: %v\n", err)
 	}
 	return res.GetBlog()
 }
@@ -103,7 +110,30 @@ func sendDeleteBlogRequest(client blogpb.BlogServiceClient, blog_id string) stri
 		BlogId: blog_id,
 	})
 	if err != nil {
-		log.Printf("Error when updating blog: %v", err)
+		log.Printf("Error when updating blog: %v\n", err)
 	}
 	return res.GetBlogId()
+}
+
+func sendListBlogRequest(client blogpb.BlogServiceClient) []blogpb.Blog {
+
+	var received_blogs []blogpb.Blog
+
+	stream, err := client.ListBlog(context.Background(), &blogpb.ListBlogRequest{})
+	if err != nil {
+		log.Printf("Error when listing blogs: %v\n", err)
+	}
+	for {
+		msg, err := stream.Recv()
+		if err == io.EOF {
+			// reached end of stream
+			break
+		}
+		if err != nil {
+			log.Fatalf("Error while collecting results for listblog: %v\n", err)
+		}
+		received_blogs = append(received_blogs, *msg.GetBlog())
+	}
+
+	return received_blogs
 }

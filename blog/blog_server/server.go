@@ -182,6 +182,39 @@ func dataToBlogPb(data *blogItem) *blogpb.Blog {
 	}
 }
 
+func (*server) ListBlog(req *blogpb.ListBlogRequest, stream blogpb.BlogService_ListBlogServer) error {
+	fmt.Println("Inside list blog")
+
+	filter := bson.M{}
+	cursor, err := collection.Find(context.Background(), filter)
+	if err != nil {
+		return status.Errorf(
+			codes.Internal,
+			fmt.Sprintf("unexpected internal error when creating cursor: %v", err),
+		)
+	}
+	defer cursor.Close(context.Background())
+	for cursor.Next(context.Background()) {
+		data := &blogItem{}
+		err := cursor.Decode(data)
+		if err != nil {
+			return status.Errorf(
+				codes.Internal,
+				fmt.Sprintf("unexpected internal error when trying to decode blog from cursor: %v", err),
+			)
+		}
+		fmt.Printf("Just retrieved blog: %v from cursor\n", data.ID.String())
+		stream.SendMsg(&blogpb.ListBlogResponse{Blog: dataToBlogPb(data)})
+	}
+	if err := cursor.Err(); err != nil {
+		return status.Errorf(
+			codes.Internal,
+			fmt.Sprintf("unexpected internal error when finished reading from cursor: %v", err),
+		)
+	}
+	return nil
+}
+
 func main() {
 	//if we crash the go code we get the file name and line number
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
