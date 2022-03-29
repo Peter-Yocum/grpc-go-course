@@ -17,6 +17,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 )
 
@@ -137,7 +138,7 @@ func (*server) UpdateBlog(ctx context.Context, req *blogpb.UpdateBlogRequest) (*
 
 func (*server) DeleteBlog(ctx context.Context, req *blogpb.DeleteBlogRequest) (*blogpb.DeleteBlogResponse, error) {
 
-	fmt.Printf("Retrieved blog_id from update blog request: %v\n", req.GetBlogId())
+	fmt.Printf("Retrieved blog_id from delete blog request: %v\n", req.GetBlogId())
 
 	oid, err := primitive.ObjectIDFromHex(req.GetBlogId())
 	if err != nil {
@@ -239,6 +240,7 @@ func main() {
 	opts := []grpc.ServerOption{}
 	s := grpc.NewServer(opts...)
 	blogpb.RegisterBlogServiceServer(s, &server{})
+	reflection.Register(s)
 
 	go func() {
 		fmt.Println("Starting Server...")
